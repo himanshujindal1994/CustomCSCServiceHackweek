@@ -64,6 +64,14 @@ public class RSAWrappingRunner {
     //public static Certificate self_signed_cert;
     //public static Certificate[] chain;
 
+    public static Key getKeyByLabel(String label)
+            throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException,
+            UnrecoverableKeyException {
+        KeyStore keystore = KeyStore.getInstance(CloudHsmProvider.PROVIDER_NAME);
+        keystore.load(null, null);
+        return keystore.getKey(label, null);
+    }
+
     public static String doRegister(String label) throws Exception {
           KeyPair wrappingKeyPair;
           Certificate self_signed_cert;
@@ -84,8 +92,8 @@ public class RSAWrappingRunner {
     }
 
     public static void doSign(String src, String dest, String label) throws Exception {
-        PrivateKey privateKey = (PrivateKey) KeyUtilitiesRunner.getKeyByLabel(label);
-        PublicKey publicKey = (PublicKey) KeyUtilitiesRunner.getKeyByLabel(label);
+        PrivateKey privateKey = (PrivateKey) getKeyByLabel(label);
+        PublicKey publicKey = (PublicKey) getKeyByLabel(label);
         KeyPair wrappingKeyPair = new KeyPair(publicKey, privateKey);
         Certificate self_signed_cert = generateCert(wrappingKeyPair);
         Certificate[] chain = new Certificate[1];
