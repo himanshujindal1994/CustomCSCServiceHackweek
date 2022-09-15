@@ -16,109 +16,58 @@
  */
 package com.javatpoint.service;
 
-import com.amazonaws.cloudhsm.jce.jni.exception.AddAttributeException;
-import com.amazonaws.cloudhsm.jce.provider.CloudHsmProvider;
-import com.amazonaws.cloudhsm.jce.provider.attributes.*;
+import com.cavium.key.parameter.CaviumECGenParameterSpec;
+import com.cavium.key.parameter.CaviumRSAKeyGenParameterSpec;
 
 import java.math.BigInteger;
-import java.security.*;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
-/** Asymmetric key generation examples. */
+/**
+ * Asymmetric key generation examples.
+ */
 public class AsymmetricKeys {
-    /**
-     * Generate an EC key pair using the given curve. The label passed will be appended with
-     * ":Public" and ":Private" for the respective keys. Supported curves are documented here:
-     * https://docs.aws.amazon.com/cloudhsm/latest/userguide/java-lib-supported.html Curve params
-     * list: EcParams.EC_CURVE_PRIME256; EcParams.EC_CURVE_PRIME384; EcParams.EC_CURVE_SECP256;
-     *
-     * @return a key pair object that represents the keys on the HSM.
-     * @throws InvalidAlgorithmParameterException
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchProviderException
-     */
-    public static KeyPair generateECKeyPair(byte[] curveParams, String label)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
-                    NoSuchProviderException, AddAttributeException {
+    public KeyPair generateECKeyPair(String curveName, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        boolean isExtractable = false;
+        boolean isPersistent = false;
 
-        final KeyPairGenerator keyPairGen =
-                KeyPairGenerator.getInstance("EC", CloudHsmProvider.PROVIDER_NAME);
+        return generateECKeyPairWithParams(curveName, label, isExtractable, isPersistent);
+    }
 
-        // Set attributes for EC public key
-        final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
-        publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
-        publicKeyAttrsMap.put(KeyAttribute.EC_PARAMS, curveParams);
+    public KeyPair generateECKeyPairWithParams(String curveName, String label, boolean isExtractable, boolean isPersistent)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 
-        // Set attributes for EC private key
-        final KeyAttributesMap privateKeyAttrsMap =
-                new KeyAttributesMapBuilder().put(KeyAttribute.LABEL, label + ":Private").build();
-
-        // Create KeyPairAttributesMap and use that to initialize the keyPair generator
-        KeyPairAttributesMap keyPairSpec =
-                new KeyPairAttributesMapBuilder()
-                        .withPublic(publicKeyAttrsMap)
-                        .withPrivate(privateKeyAttrsMap)
-                        .build();
-        keyPairGen.initialize(keyPairSpec);
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("EC", "Cavium");
+        keyPairGen.initialize(
+                new CaviumECGenParameterSpec(
+                        curveName,
+                        label + ":public",
+                        label + ":private",
+                        isExtractable,
+                        isPersistent));
 
         return keyPairGen.generateKeyPair();
     }
 
-    /**
-     * Generate an RSA key pair. The label passed will be appended with ":Public" and ":Private" for
-     * the respective keys.
-     *
-     * @return a key pair object that represents the keys on the HSM.
-     * @throws InvalidAlgorithmParameterException
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchProviderException
-     */
-    public static KeyPair generateRSAKeyPair(int keySizeInBits, String label)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
-                    NoSuchProviderException, AddAttributeException {
-        return generateRSAKeyPair(
-                keySizeInBits, label, new KeyAttributesMap(), new KeyAttributesMap());
+    public KeyPair generateRSAKeyPair(int keySizeInBits, String label)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        boolean isExtractable = false;
+        boolean isPersistent = false;
+
+        return generateRSAKeyPairWithParams(keySizeInBits, label, isExtractable, isPersistent);
     }
 
-    /**
-     * Generate an RSA key pair. The label passed will be appended with ":Public" and ":Private" for
-     * the respective keys.
-     *
-     * @return a key pair object that represents the keys on the HSM.
-     * @throws InvalidAlgorithmParameterException
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchProviderException
-     */
-    public static KeyPair generateRSAKeyPair(
-            int keySizeInBits,
-            String label,
-            KeyAttributesMap additionalPublicKeyAttributes,
-            KeyAttributesMap additionalPrivateKeyAttributes)
-            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
-                    NoSuchProviderException, AddAttributeException {
+    public KeyPair generateRSAKeyPairWithParams(int keySizeInBits, String label, boolean isExtractable, boolean isPersistent)
+            throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
 
-        KeyPairGenerator keyPairGen =
-                KeyPairGenerator.getInstance("RSA", CloudHsmProvider.PROVIDER_NAME);
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("rsa", "Cavium");;
+        CaviumRSAKeyGenParameterSpec spec = new CaviumRSAKeyGenParameterSpec(keySizeInBits, new BigInteger("65537"), label + ":public", label + ":private", isExtractable, isPersistent);
 
-        // Set attributes for RSA public key
-        final KeyAttributesMap publicKeyAttrsMap = new KeyAttributesMap();
-        publicKeyAttrsMap.putAll(additionalPublicKeyAttributes);
-        publicKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Public");
-        publicKeyAttrsMap.put(KeyAttribute.MODULUS_BITS, keySizeInBits);
-        publicKeyAttrsMap.put(KeyAttribute.PUBLIC_EXPONENT, new BigInteger("65537").toByteArray());
-
-        // Set attributes for RSA private key
-        final KeyAttributesMap privateKeyAttrsMap = new KeyAttributesMap();
-        privateKeyAttrsMap.putAll(additionalPrivateKeyAttributes);
-        privateKeyAttrsMap.put(KeyAttribute.LABEL, label + ":Private");
-
-        // Create KeyPairAttributesMap and use that to initialize the keyPair generator
-        KeyPairAttributesMap keyPairSpec =
-                new KeyPairAttributesMapBuilder()
-                        .withPublic(publicKeyAttrsMap)
-                        .withPrivate(privateKeyAttrsMap)
-                        .build();
-
-        keyPairGen.initialize(keyPairSpec);
+        keyPairGen.initialize(spec);
 
         return keyPairGen.generateKeyPair();
     }
