@@ -67,7 +67,7 @@ public class RSAWrappingRunner {
     public static Key getKeyByLabel(String label)
             throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException,
             UnrecoverableKeyException {
-        KeyStore keystore = KeyStore.getInstance(CloudHsmProvider.PROVIDER_NAME);
+        KeyStore keystore = KeyStore.getInstance("Cavium");
         keystore.load(null, null);
         return keystore.getKey(label, null);
     }
@@ -156,7 +156,7 @@ public class RSAWrappingRunner {
         System.out.println("Certificate" + chain[0].getEncoded());*/
 
 
-        sign(src, dest, ck.getLabel());
+        sign(src, dest, wrappingKeyPair.getPrivate(), chain);
 
 
         // Unwrap a key as non-extractable and persistent.
