@@ -3,6 +3,8 @@ package com.javatpoint.controller;
 import com.javatpoint.service.RSAWrappingRunner;
 import com.javatpoint.utils.LoginHSM;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,4 +46,10 @@ public class CustomCSCController {
         RSAWrappingRunner.doSignature(src, dest, label);
         return "Digital Signature applied!!";
     }
+
+    @RequestMapping("/signDoc")
+    public ResponseEntity<?> doSignDoc(@RequestParam(name = "inDoc") String src, @RequestParam(name = "outDoc") String dest, @RequestParam(name = "keyAlias") String label) throws Exception {
+        return RSAWrappingRunner.doSignDoc(src, dest, label);
+    }
+
 }

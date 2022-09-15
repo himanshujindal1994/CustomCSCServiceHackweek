@@ -24,18 +24,23 @@ import com.cavium.key.CaviumRSAPrivateKey;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
 import com.javatpoint.utils.AsymmetricKeys;
-import com.javatpoint.utils.LoginHSM;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.*;
 import org.apache.commons.io.IOUtils;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import javax.crypto.*;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import java.io.*;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -59,7 +64,7 @@ public class RSAWrappingRunner {
     public static Certificate self_signed_cert;
     public static Certificate[] chain;
 
-    public static void doRegister(String label) throws Exception {
+    public static String doRegister(String label) throws Exception {
 // Wrapping keys must be persistent.
         wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, label, true, true);
 
@@ -71,13 +76,25 @@ public class RSAWrappingRunner {
         self_signed_cert = generateCert(wrappingKeyPair);
         chain = new Certificate[1];
         chain[0] = self_signed_cert;
-
+        return
         System.out.printf("Key handle %d with label %s created.\n", ck.getHandle(), ck.getLabel());
 
     }
 
     public static void doSign(String src, String dest) throws Exception {
         sign(src, dest);
+    }
+
+    public static ResponseEntity<?> doSignDoc(String src, String dest, String label) throws Exception {
+        doSignature(src, dest, label);
+
+        Path pdfPath = Paths.get(dest);
+        byte[] responsepdf = Files.readAllBytes(pdfPath);
+        ByteArrayResource resource = new ByteArrayResource(responsepdf);
+
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        return (ResponseEntity.ok()).contentType(mediaType).body(resource);
+
     }
 
     public static void doSignature(String src, String dest, String label) throws Exception {
