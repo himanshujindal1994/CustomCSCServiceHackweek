@@ -67,8 +67,7 @@ public class RSAWrappingRunner {
         Key extractableKey = generateExtractableKey(256, label, false);
 
         rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
-        Key k = wrappingKeyPair.getPrivate();
-        CaviumKey ck = (CaviumKey)k;
+        CaviumKey ck = (CaviumKey)wrappingKeyPair.getPrivate();
         self_signed_cert = generateCert(wrappingKeyPair);
         chain = new Certificate[1];
         chain[0] = self_signed_cert;
@@ -95,7 +94,7 @@ public class RSAWrappingRunner {
 
         // GET KEYS
         rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
-        CaviumKey ck = (CaviumKey)k;
+        CaviumKey ck = (CaviumKey)wrappingKeyPair.getPrivate();
 
         System.out.printf("Key handle %d with label %s\n", ck.getHandle(), ck.getLabel());
 
