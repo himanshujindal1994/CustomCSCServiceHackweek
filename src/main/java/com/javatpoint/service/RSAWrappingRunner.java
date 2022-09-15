@@ -23,6 +23,8 @@ import com.cavium.key.CaviumKey;
 import com.cavium.key.CaviumRSAPrivateKey;
 import com.cavium.key.parameter.CaviumAESKeyGenParameterSpec;
 import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
+import com.javatpoint.utils.AsymmetricKeys;
+import com.javatpoint.utils.LoginHSM;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.*;
@@ -53,20 +55,38 @@ public class RSAWrappingRunner {
     private static byte[] ORGANIZATION_NAME_OID = new byte[] { (byte) 0x55, (byte) 0x04, (byte) 0x0A };
     private static byte[] ORGANIZATION_UNIT_OID = new byte[] { (byte) 0x55, (byte) 0x04, (byte) 0x0B };
 
+    public static KeyPair wrappingKeyPair;
+    public static Certificate self_signed_cert;
+    public static Certificate[] chain;
 
-    public static void doSeal() throws Exception {
-        try {
-            Security.addProvider(new com.cavium.provider.CaviumProvider());
-        } catch (IOException ex) {
-            System.out.println(ex);
-            return;
-        }
-
-        // Wrapping keys must be persistent.
-        KeyPair wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, "RSA Wrapping Test", true, true);
+    public static void doRegister(String label) throws Exception {
+// Wrapping keys must be persistent.
+        wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, label, true, true);
 
         // Extractable keys must be marked extractable.
-        Key extractableKey = generateExtractableKey(256, "Extractable key to wrap", false);
+        Key extractableKey = generateExtractableKey(256, label, false);
+
+        rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
+        Key k = wrappingKeyPair.getPrivate();
+        CaviumKey ck = (CaviumKey)k;
+        self_signed_cert = generateCert(wrappingKeyPair);
+        chain = new Certificate[1];
+        chain[0] = self_signed_cert;
+
+        System.out.println("Key handle %d with label %s created.\n", ck.getHandle(), ck.getLabel());
+
+    }
+
+    public static void doSign(String src, String dest) throws Exception {
+        sign(src, dest);
+    }
+
+    public static void doSignature(String src, String dest, String label) throws Exception {
+        // Wrapping keys must be persistent.
+        wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, label, true, true);
+
+        // Extractable keys must be marked extractable.
+        Key extractableKey = generateExtractableKey(256, label, false);
 
         // Using the wrapping keypair, wrap and unwrap the extractable key with OAEP wrapping.
 //            rsaOAEPWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
@@ -75,27 +95,21 @@ public class RSAWrappingRunner {
 
         // GET KEYS
         rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
-        Key k = wrappingKeyPair.getPrivate();
         CaviumKey ck = (CaviumKey)k;
 
         System.out.printf("Key handle %d with label %s\n", ck.getHandle(), ck.getLabel());
 
 
         //GET SELF-SIGNED CERTIFICATE
-        Certificate self_signed_cert = generateCert(wrappingKeyPair);
-        Certificate[] chain = new Certificate[1];
+        self_signed_cert = generateCert(wrappingKeyPair);
+        chain = new Certificate[1];
         chain[0] = self_signed_cert;
-
+/*
         System.out.println("Certificate" + chain.length);
-        System.out.println("Certificate" + chain[0].getEncoded());
+        System.out.println("Certificate" + chain[0].getEncoded());*/
 
 
-        BouncyCastleProvider provider = new BouncyCastleProvider();
-        Security.addProvider(provider);
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-        sign("/home/ec2-user/sign/aws-cloudhsm-jce-examples/sample.pdf", chain, k);
+        sign(src, dest);
 
 
         // Unwrap a key as non-extractable and persistent.
@@ -216,9 +230,9 @@ public class RSAWrappingRunner {
         return name;
     }
 
-    public static void sign(String src, Certificate[] chain, Key k) throws IOException, DocumentException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException, CertificateEncodingException {
+    public static void sign(String src, String dest) throws IOException, DocumentException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException, CertificateEncodingException {
         PdfReader pdfReader = new PdfReader(src);
-        FileOutputStream os = new FileOutputStream("/home/ec2-user/sign/aws-cloudhsm-jce-examples/sample-out.pdf");
+        FileOutputStream os = new FileOutputStream(dest);
         PdfStamper signer = PdfStamper.createSignature(pdfReader, os, '\0');
 
         Calendar signDate = Calendar.getInstance();
@@ -227,12 +241,12 @@ public class RSAWrappingRunner {
 
         PdfSignature pdfSignature = new PdfSignature(PdfName.ADOBE_PPKLITE, PdfName.ADBE_PKCS7_DETACHED);
         pdfSignature.setReason("Reason to sign");
-        pdfSignature.setLocation("Location of signature");
-        pdfSignature.setContact("Person Name");
+        pdfSignature.setLocation("Noida");
+        pdfSignature.setContact("CSC-Hackweek-Alpine");
         pdfSignature.setDate(new PdfDate(signDate));
         pdfSignature.setCert(chain[0].getEncoded());
 
-        PdfSignatureAppearance appearance = createAppearance(signer, page, pdfSignature, chain);
+        PdfSignatureAppearance appearance = createAppearance(signer, page, pdfSignature);
         //PdfSignatureAppearance appearance = signer.getSignatureAppearance();
         PdfPKCS7 sgn = new PdfPKCS7(null, chain, null, "SHA-256", null, false);
         InputStream data = appearance.getRangeStream();
@@ -245,7 +259,7 @@ public class RSAWrappingRunner {
 
         System.out.println("Hash: " + unsignedHash.length);
 
-        byte[] signedHash = addDigitalSignatureToHash(unsignedHash, (PrivateKey)k);
+        byte[] signedHash = addDigitalSignatureToHash(unsignedHash, (PrivateKey) wrappingKeyPair.getPrivate());
 
         System.out.println("Hash: " + signedHash.length);
 
@@ -261,7 +275,7 @@ public class RSAWrappingRunner {
         appearance.close(dictionary);
     }
 
-    private static PdfSignatureAppearance createAppearance(PdfStamper signer, int page, PdfSignature pdfSignature, Certificate[] chain) throws IOException, DocumentException {
+    private static PdfSignatureAppearance createAppearance(PdfStamper signer, int page, PdfSignature pdfSignature) throws IOException, DocumentException {
         PdfSignatureAppearance appearance = signer.getSignatureAppearance();
         appearance.setRender(PdfSignatureAppearance.SignatureRenderDescription);
         appearance.setAcro6Layers(true);
