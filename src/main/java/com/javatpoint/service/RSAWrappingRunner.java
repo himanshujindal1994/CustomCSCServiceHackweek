@@ -60,11 +60,14 @@ public class RSAWrappingRunner {
     private static byte[] ORGANIZATION_NAME_OID = new byte[] { (byte) 0x55, (byte) 0x04, (byte) 0x0A };
     private static byte[] ORGANIZATION_UNIT_OID = new byte[] { (byte) 0x55, (byte) 0x04, (byte) 0x0B };
 
-    public static KeyPair wrappingKeyPair;
-    public static Certificate self_signed_cert;
-    public static Certificate[] chain;
+    //public static KeyPair wrappingKeyPair;
+    //public static Certificate self_signed_cert;
+    //public static Certificate[] chain;
 
     public static String doRegister(String label) throws Exception {
+          KeyPair wrappingKeyPair;
+          Certificate self_signed_cert;
+          Certificate[] chain;
 // Wrapping keys must be persistent.
         wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, label, true, true);
 
@@ -80,11 +83,30 @@ public class RSAWrappingRunner {
 
     }
 
-    public static void doSign(String src, String dest) throws Exception {
-        sign(src, dest);
+    public static void doSign(String src, String dest, String label) throws Exception {
+        PrivateKey privateKey = (PrivateKey) KeyUtilitiesRunner.getKeyByLabel(label);
+        PublicKey publicKey = (PublicKey) KeyUtilitiesRunner.getKeyByLabel(label);
+        KeyPair wrappingKeyPair = new KeyPair(publicKey, privateKey);
+        Certificate self_signed_cert = generateCert(wrappingKeyPair);
+        Certificate[] chain = new Certificate[1];
+        chain[0] = self_signed_cert;
+        sign(src, dest, privateKey, chain);
     }
 
     public static ResponseEntity<?> doSignDoc(String src, String dest, String label) throws Exception {
+
+        doSign(src, dest, label);
+
+        Path pdfPath = Paths.get(dest);
+        byte[] responsepdf = Files.readAllBytes(pdfPath);
+        ByteArrayResource resource = new ByteArrayResource(responsepdf);
+
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        return (ResponseEntity.ok()).contentType(mediaType).body(resource);
+    }
+
+    public static ResponseEntity<?> doSignatureDoc(String src, String dest, String label) throws Exception {
+
         doSignature(src, dest, label);
 
         Path pdfPath = Paths.get(dest);
@@ -93,10 +115,12 @@ public class RSAWrappingRunner {
 
         MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
         return (ResponseEntity.ok()).contentType(mediaType).body(resource);
-
     }
 
     public static void doSignature(String src, String dest, String label) throws Exception {
+        KeyPair wrappingKeyPair;
+        Certificate self_signed_cert;
+        Certificate[] chain;
         // Wrapping keys must be persistent.
         wrappingKeyPair = new AsymmetricKeys().generateRSAKeyPairWithParams(2048, label, true, true);
 
@@ -112,7 +136,7 @@ public class RSAWrappingRunner {
         rsaAesWrap(wrappingKeyPair.getPublic(), wrappingKeyPair.getPrivate(), extractableKey);
         CaviumKey ck = (CaviumKey)wrappingKeyPair.getPrivate();
 
-        System.out.printf("Key handle %d with label %s\n", ck.getHandle(), ck.getLabel());
+        System.out.printf("Key handle %d with label %s created.\n", ck.getHandle(), ck.getLabel());
 
 
         //GET SELF-SIGNED CERTIFICATE
@@ -124,7 +148,7 @@ public class RSAWrappingRunner {
         System.out.println("Certificate" + chain[0].getEncoded());*/
 
 
-        sign(src, dest);
+        sign(src, dest, ck.getLabel());
 
 
         // Unwrap a key as non-extractable and persistent.
@@ -245,7 +269,8 @@ public class RSAWrappingRunner {
         return name;
     }
 
-    public static void sign(String src, String dest) throws IOException, DocumentException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException, CertificateEncodingException {
+    public static void sign(String src, String dest, PrivateKey privateKey, Certificate[] chain) throws IOException, DocumentException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException, CertificateException, UnrecoverableKeyException, KeyStoreException {
+
         PdfReader pdfReader = new PdfReader(src);
         FileOutputStream os = new FileOutputStream(dest);
         PdfStamper signer = PdfStamper.createSignature(pdfReader, os, '\0');
@@ -261,7 +286,7 @@ public class RSAWrappingRunner {
         pdfSignature.setDate(new PdfDate(signDate));
         pdfSignature.setCert(chain[0].getEncoded());
 
-        PdfSignatureAppearance appearance = createAppearance(signer, page, pdfSignature);
+        PdfSignatureAppearance appearance = createAppearance(signer, page, pdfSignature, chain);
         //PdfSignatureAppearance appearance = signer.getSignatureAppearance();
         PdfPKCS7 sgn = new PdfPKCS7(null, chain, null, "SHA-256", null, false);
         InputStream data = appearance.getRangeStream();
@@ -274,7 +299,7 @@ public class RSAWrappingRunner {
 
         System.out.println("Hash: " + unsignedHash.length);
 
-        byte[] signedHash = addDigitalSignatureToHash(unsignedHash, (PrivateKey) wrappingKeyPair.getPrivate());
+        byte[] signedHash = addDigitalSignatureToHash(unsignedHash, privateKey);
 
         System.out.println("Hash: " + signedHash.length);
 
@@ -290,7 +315,7 @@ public class RSAWrappingRunner {
         appearance.close(dictionary);
     }
 
-    private static PdfSignatureAppearance createAppearance(PdfStamper signer, int page, PdfSignature pdfSignature) throws IOException, DocumentException {
+    private static PdfSignatureAppearance createAppearance(PdfStamper signer, int page, PdfSignature pdfSignature, Certificate[] chain) throws IOException, DocumentException {
         PdfSignatureAppearance appearance = signer.getSignatureAppearance();
         appearance.setRender(PdfSignatureAppearance.SignatureRenderDescription);
         appearance.setAcro6Layers(true);
