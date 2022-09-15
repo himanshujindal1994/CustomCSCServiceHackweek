@@ -76,8 +76,7 @@ public class RSAWrappingRunner {
         self_signed_cert = generateCert(wrappingKeyPair);
         chain = new Certificate[1];
         chain[0] = self_signed_cert;
-        return
-        System.out.printf("Key handle %d with label %s created.\n", ck.getHandle(), ck.getLabel());
+        return String.format("Key handle %d with label %s created.\n", ck.getHandle(), ck.getLabel());
 
     }
 
