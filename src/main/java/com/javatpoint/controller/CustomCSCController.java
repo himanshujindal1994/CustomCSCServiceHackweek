@@ -36,8 +36,8 @@ public class CustomCSCController {
     }
 
     @RequestMapping("/sign")
-    public String doSign(@RequestParam(name = "inDoc") String src, @RequestParam(name = "outDoc") String dest, @RequestParam(name = "keyHandle") String handle) throws Exception {
-        RSAWrappingRunner.doSign(src, dest);
+    public String doSign(@RequestParam(name = "inDoc") String src, @RequestParam(name = "outDoc") String dest, @RequestParam(name = "keyAlias") String label) throws Exception {
+        RSAWrappingRunner.doSign(src, dest, label);
         return "Digital Signature applied!!";
     }
 
@@ -50,6 +50,11 @@ public class CustomCSCController {
     @RequestMapping("/signDoc")
     public ResponseEntity<?> doSignDoc(@RequestParam(name = "inDoc") String src, @RequestParam(name = "outDoc") String dest, @RequestParam(name = "keyAlias") String label) throws Exception {
         return RSAWrappingRunner.doSignDoc(src, dest, label);
+    }
+
+    @RequestMapping("/signatureDoc")
+    public ResponseEntity<?> doSignatureDoc(@RequestParam(name = "inDoc") String src, @RequestParam(name = "outDoc") String dest, @RequestParam(name = "keyAlias") String label) throws Exception {
+        return RSAWrappingRunner.doSignatureDoc(src, dest, label);
     }
 
 }
