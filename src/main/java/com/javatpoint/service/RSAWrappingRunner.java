@@ -16,6 +16,7 @@
  */
 package com.javatpoint.service;
 
+import com.amazonaws.cloudhsm.examples.KeyUtilitiesRunner;
 import com.cavium.asn1.Encoder;
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.Util;
@@ -102,6 +103,9 @@ public class RSAWrappingRunner {
     }
 
     public static ResponseEntity<?> doSignDoc(String src, String dest, String label) throws Exception {
+
+        CaviumKey key = KeyUtilitiesRunner.getKeyByHandle(7);
+        KeyUtilitiesRunner.displayKeyInfo(key);
 
         doSign(src, dest, label);
 
