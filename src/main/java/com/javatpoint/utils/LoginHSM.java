@@ -12,7 +12,7 @@ public class LoginHSM {
 
     public static void login() throws Exception {
 
-        String user = "example_user", pass="NewPassword", partition="PARTITION_1";
+        String user = "himanshu", pass="himanshu123", partition="PARTITION_1";
 
 //        try {
 //            Security.addProvider(new com.cavium.provider.CaviumProvider());
