@@ -14,7 +14,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.amazonaws.cloudhsm.examples;
+package com.javatpoint.service;;
 
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.ImportKey;
@@ -28,6 +28,7 @@ import com.cavium.key.CaviumRSAPrivateKey;
 import com.cavium.key.CaviumRSAPublicKey;
 import com.cavium.key.parameter.CaviumECGenParameterSpec;
 import com.cavium.key.parameter.CaviumKeyGenAlgorithmParameterSpec;
+import com.javatpoint.utils.AsymmetricKeys;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
