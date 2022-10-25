@@ -16,6 +16,7 @@
  */
 package com.javatpoint.service;
 
+import com.javatpoint.utils.SignUtil;
 import com.amazonaws.cloudhsm.examples.KeyUtilitiesRunner;
 import com.cavium.asn1.Encoder;
 import com.cavium.cfm2.CFM2Exception;
@@ -106,7 +107,7 @@ public class RSAWrappingRunner {
 
         CaviumKey key = KeyUtilitiesRunner.getKeyByHandle(7);
         KeyUtilitiesRunner.displayKeyInfo(key);
-
+        SignUtil.step1();
         doSign(src, dest, label);
 
         Path pdfPath = Paths.get(dest);
