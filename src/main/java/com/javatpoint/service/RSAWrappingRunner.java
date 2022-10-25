@@ -17,7 +17,7 @@
 package com.javatpoint.service;
 
 import com.javatpoint.utils.SignUtil;
-import com.amazonaws.cloudhsm.examples.KeyUtilitiesRunner;
+import com.javatpoint.service.KeyUtilitiesRunner;
 import com.cavium.asn1.Encoder;
 import com.cavium.cfm2.CFM2Exception;
 import com.cavium.cfm2.Util;
