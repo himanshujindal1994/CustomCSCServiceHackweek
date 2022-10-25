@@ -484,4 +484,32 @@ public class RSAWrappingRunner {
 
         return null;
     }
+    
+    public static Key generateNonExtractableKey(int keySizeInBits, String keyLabel, boolean isPersistent) {
+        boolean isExtractable = false;
+
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES", "Cavium");
+
+            CaviumAESKeyGenParameterSpec aesSpec = new CaviumAESKeyGenParameterSpec(keySizeInBits, keyLabel, isExtractable, isPersistent);
+            keyGen.init(aesSpec);
+            SecretKey aesKey = keyGen.generateKey();
+
+            return aesKey;
+
+        } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            if (CFM2Exception.isAuthenticationFailure(e)) {
+                System.out.println("Detected invalid credentials");
+            } else if (CFM2Exception.isClientDisconnectError(e)) {
+                System.out.println("Detected daemon network failure");
+            }
+
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
 }
