@@ -25,8 +25,8 @@ import org.bouncycastle.operator.ContentSigner;
 public class SignUtil {
 
 
-    public void step1() throws Exception {
-        Key extractableKey = RSAWrappingRunner.generateNonExtractableKey(256, "himanshu", false);
+    public static void step1() throws Exception {
+        Key nonextractableKey = RSAWrappingRunner.generateNonExtractableKey(256, "himanshu1", false);
 
 
         String keyStoreFile = "testkeystore";   // Name of new KeyStore file to generate
@@ -52,6 +52,8 @@ public class SignUtil {
 
         CaviumKey key = KeyUtilitiesRunner.getKeyByHandle(7);
         KeyUtilitiesRunner.displayKeyInfo(key);
+
+        KeyUtilitiesRunner.displayKeyInfo((CaviumKey) nonextractableKey);
 
     }
 }
